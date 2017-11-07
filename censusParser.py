@@ -8,6 +8,7 @@ OFFSET  = 2
 
 
 for line in input:
+    line = line.replace('\"', '')
     line = line.split(",")
     data = []
     newLine = ''
