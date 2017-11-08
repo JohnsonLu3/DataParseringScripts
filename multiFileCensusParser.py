@@ -1,7 +1,7 @@
 import glob
 path = "CensusData/ny_census/*.csv"
 
-map = {}
+map  = {}
 
 for fpath in glob.glob(path):
     fileName = fpath.replace("CensusData/ny_census/", '')
