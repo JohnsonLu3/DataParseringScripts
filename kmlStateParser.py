@@ -15,18 +15,18 @@ for line in input:
             output.write(outputLine)
 
         stateFp     = line.replace("<SimpleData name=\"STATEFP\">", '')
-        stateFp     = stateFp.replace("</SimpleData>", '')
+        stateFp     = stateFp.replace("</SimpleData>\n", '')
         outputLine  = stateFp + ','
 
     elif "<SimpleData name=\"NAME\">" in line:
         name        = line.replace("<SimpleData name=\"NAME\">", '')
-        name        = name.replace("</SimpleData>", '')
+        name        = name.replace("</SimpleData>\n", '')
         outputLine += name + ','
 
     elif "<coordinates>" in line:
         cord        = line.replace("<coordinates>", '')
-        cord        = cord.replace("</coordinates>", '')
-        outputLine += cord + ','
+        cord        = cord.replace("</coordinates>\n", '')
+        outputLine += '[' + cord + ']' + ','
 
 
 input.close()
