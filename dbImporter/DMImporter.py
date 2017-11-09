@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey
-from sqlalchemy import Sequence
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy import inspect
 
 # To test in memory no DB conn required right now
@@ -15,9 +15,7 @@ states = []
 districts = []
 DistrictBoundaries = []
 boundaries = []
-users = []
 population = []
-votes = []
 
 
 def main():
@@ -26,21 +24,9 @@ def main():
     inspector = inspect(engine)
 
     # printTables()
+    importData()
 
-
-    importVotingData()
-
-        # # fill state info
-        # ins = state.insert().values(stateName = data[0] , year = int(data[1]), clickCount = 0)
-        # result = conn.execute(ins)
-        # # get state PK for FK in district
-        # stateId = result.inserted_primary_key
-        # # fill district info
-        # ins = district.insert().values(stateId=stateId, districtNum = int(data[2]), voteRep= int(data[3]), voteDem= int(data[4]), clickCount = 0)
-        # result = conn.execute()
-        # districtId = result.inserted_primary_key
-
-def importVotingData():
+def importData():
     # populate voting data
     #
     voteData  = open("../parsedFiles/votingData.csv", 'r')
@@ -72,7 +58,7 @@ def importVotingData():
                     sId = int(line[0])
                     # get polygons
                     for i in range(2,len(line)):
-                        polygon = "POLYGON" + line[i]
+                        polygon = "POLYGON(" + line[i] + ")"
                         polygon = polygon[:-1]
                         polygons.append(polygon)
                     break
@@ -85,21 +71,51 @@ def importVotingData():
             # import State Boundaries
             boundaryPKId = []
 
-            for polygon in polygons:
-                ins = metadata.tables['Boundaries'].insert().values(Shape=polygon)
-                result = conn.execute(ins)
-                boundaryPKId.append(result.inserted_primary_key)
-
-            # import StateBoundaries
-            for pkId in boundaryPKId:
-                ins = metadata.tables['StateBoundaries'].insert().values(BoundaryId = pkId, StateId = statePKId, )
-                result = conn.execute(ins)
+            # for polygon in polygons:
+            #     ins = metadata.tables['Boundaries'].insert().values(Shape=polygon)
+            #     result = conn.execute(ins)
+            #     boundaryPKId.append(result.inserted_primary_key)
+            #
+            # # import StateBoundaries
+            # for pkId in boundaryPKId:
+            #     ins = metadata.tables['StateBoundaries'].insert().values(BoundaryId = pkId, StateId = statePKId)
+            #     result = conn.execute(ins)
 
             # import district Data
+            importPopulationData(year, sName, sId, dId)
+
+
+            # import votingData
+            importVotingData(dId, "Democrat", rVote)
+            importVotingData(dId, "Republican", rVote)
+
+    voteData.close()
+    stateData.close()
+
+
+def importPopulationData(year, sName, sFp, district):
+    # Population
+    # `Id`
+    # `Name` ENUM('Total', 'White', 'Black', 'Hispanic', 'Asian', 'PacificIslander', 'AmericanIndian', 'Other', 'Mixed')
+    # `Population`
+    # `DistrictId`
+    if year in range(2010, 2020):               # range of the census data we have
+        if sName == 'Virginia':
+            vaCensus = open('../parsedFiles/VirginiaCensus.csv', 'r')
+        elif sName == 'North Carolina':
+            ncCensus = open('../parsedFiles/NorthCarolinaCensus.csv', 'r')
+        elif sName == 'New York':
+            nyCensus = open('../parsedFiles/nyCensus.csv', 'r')
+
+        ins = metadata.tables['Population'].insert().values(Name='', Population=-1, DistrictId=district)
+        result = conn.execute(ins)
 
 
 
 
+def importVotingData(dId, party, vote):
+    ins = metadata.tables['Votes'].insert().values(DistrictId=dId, Party=party, voteCount=vote)
+    result = conn.execute(ins)
 
 
 def printTables():
