@@ -16,7 +16,6 @@ Base.prepare(engine, reflect=True)
 
 Boundaries = Base.classes.Boundaries
 
-
 StateBoundaries = []
 states = []
 districts = []
@@ -26,9 +25,6 @@ population = []
 
 
 def main():
-
-    # print database tables
-    inspector = inspect(engine)
 
     # printTables()
     importData()
@@ -101,7 +97,7 @@ def importData():
                 result = conn.execute(ins)
 
             # import district Data
-            importDistricts()
+            importDistricts(statePKId, sId, dId)
             importPopulationData(year, sName, sId, dId)
 
 
@@ -111,6 +107,27 @@ def importData():
 
     voteData.close()
     stateData.close()
+
+def importDistricts(statePKId, sId, dId):
+
+    # Districts
+    # `DistrictId`
+    # `Area`
+    # `clickCount`
+    # `StateId` FK
+    district2013Data = open('../parsedFiles/DistrictGeo_2013.csv','r')
+    for line in district2013Data:
+        pass
+
+    district2014Data = open('../parsedFiles/DistrictGeo_2014.csv', 'r')
+    for line in district2014Data:
+        pass
+
+    district2016Data = open('../parsedFiles/DistrictGeo_2016.csv', 'r')
+    for line in district2016Data:
+        pass
+
+
 
 
 def importPopulationData(year, sName, sFp, district):
