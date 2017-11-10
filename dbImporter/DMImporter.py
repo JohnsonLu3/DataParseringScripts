@@ -1,7 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy import inspect
+from sqlalchemy import text
+from sqlalchemy.ext.automap import automap_base
+
 
 # To test in memory no DB conn required right now
 connection_string = "mysql+pymysql://johnsonlu:abc123@cse308.ch4xgfzmcq2l.us-east-1.rds.amazonaws.com:3306/gerrymandering"
@@ -9,6 +11,11 @@ engine = create_engine(connection_string, echo=True)
 conn = engine.connect()
 metadata = MetaData()
 metadata.reflect(bind=engine)
+Base = automap_base()
+Base.prepare(engine, reflect=True)
+
+Boundaries = Base.classes.Boundaries
+
 
 StateBoundaries = []
 states = []
@@ -58,8 +65,10 @@ def importData():
                     sId = int(line[0])
                     # get polygons
                     for i in range(2,len(line)):
-                        polygon = "POLYGON(" + line[i] + ")"
-                        polygon = polygon[:-1]
+                        polygon = line[i]
+                        polygon.replace('\n', '')
+                        polygon = "POLYGON(" + polygon + ")"
+
                         polygons.append(polygon)
                     break
 
@@ -71,17 +80,28 @@ def importData():
             # import State Boundaries
             boundaryPKId = []
 
-            # for polygon in polygons:
-            #     ins = metadata.tables['Boundaries'].insert().values(Shape=polygon)
-            #     result = conn.execute(ins)
-            #     boundaryPKId.append(result.inserted_primary_key)
-            #
-            # # import StateBoundaries
-            # for pkId in boundaryPKId:
-            #     ins = metadata.tables['StateBoundaries'].insert().values(BoundaryId = pkId, StateId = statePKId)
-            #     result = conn.execute(ins)
+            for polygon in polygons:
+                polygon = "PolygonFromText(\'" + polygon + "\')"
+
+                # sql = text('insert into Boundaries(Shape) VALUES(' + polygon +')')
+                # conn.execute(sql)
+
+                ins = metadata.tables['Boundaries'].insert().values(Shape=text(polygon))
+                result = conn.execute(ins)
+                boundPKId = result.inserted_primary_key
+
+                # s  = select([Column('Id')]).where(Boundaries.Shape == polygon)
+                # pk = conn.execute(s)
+                # get pkId from last inserted for StateBoundary FK
+                boundaryPKId.append(boundPKId)
+
+            # import StateBoundaries
+            for pkId in boundaryPKId:
+                ins = metadata.tables['StateBoundaries'].insert().values(BoundaryId = pkId, StateId = statePKId)
+                result = conn.execute(ins)
 
             # import district Data
+            importDistricts()
             importPopulationData(year, sName, sId, dId)
 
 
