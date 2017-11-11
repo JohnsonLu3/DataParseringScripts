@@ -77,12 +77,13 @@ def importStateData():
 def importStateBoundaryData():
     # import State Boundaries
     stateData = open("../parsedFiles/StateGeo.csv", 'r')
-    boundaryPKId = []
 
     for line in stateData:
+        boundaryPKId = []
+
         line = line.split(';')
         sId = int(line[0])
-        polygons = line[2].split(';')
+        polygons = line[2:]
 
         for polygon in polygons:
             polygon = "PolygonFromText(\'POLYGON(" + polygon + ")\')"
