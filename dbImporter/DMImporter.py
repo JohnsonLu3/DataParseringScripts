@@ -27,7 +27,8 @@ def main():
     # printTables()
     buildStateFPMap()
     #importStateData()
-    importStateBoundaryData()
+    #importStateBoundaryData()
+    importDistrictsAndVote('../parsedFiles/votingData.csv')
 
 
 def buildStateFPMap():
@@ -77,18 +78,16 @@ def importStateData():
 def importStateBoundaryData():
     # import State Boundaries
     stateData = open("../parsedFiles/StateGeo.csv", 'r')
-    boundaryPKId = []
 
     for line in stateData:
+        boundaryPKId = []
+
         line = line.split(';')
         sId = int(line[0])
-        polygons = line[2].split(';')
+        polygons = line[2:]
 
         for polygon in polygons:
             polygon = "PolygonFromText(\'POLYGON(" + polygon + ")\')"
-
-            # sql = text('insert into Boundaries(Shape) VALUES(' + polygon +')')
-            # conn.execute(sql)
 
             ins = metadata.tables['Boundaries'].insert().values(Shape=text(polygon))
             result = conn.execute(ins)
@@ -100,48 +99,56 @@ def importStateBoundaryData():
         # import StateBoundaries
         for pkId in boundaryPKId:
             ins = metadata.tables['StateBoundaries'].insert().values(BoundaryId=pkId[0], StateId=sId)
-            result = conn.execute(ins)
+            conn.execute(ins)
 
 
     stateData.close()
 
-def importDistricts(statePKId, year, sId):
+def importDistrictsAndVote(path):
 
     # Districts
     # `DistrictId`
     # `Area`
     # `clickCount`
     # `StateId` FK
-    area = None
-    districtPKs = []
-    districtData = None
+    sName = -1
+    dId   = -1
+    sFK   = -1
 
-    if year == 2013:
-        districtData = open('../parsedFiles/DistrictGeo_2013.csv', 'r')
-    elif year == 2014:
-        districtData = open('../parsedFiles/DistrictGeo_2014.csv', 'r')
+    districtData = open(path, 'r')
 
-    elif year == 2016:
-        districtData = open('../parsedFiles/DistrictGeo_2016.csv', 'r')
-    else:
-        pass
+    for line in districtData:
+        line = line.split(',')
 
-    if districtData != None:
-        for line in districtData:
-            line = line.split(';')
-            if line[0] == sId and line[1] == dId:
-                # Insert District Data
-                ins = metadata.tables['Districts'].insert().values(DistrictId = dId, Area= area, clickCount = 0, StateId=statePKId)
-                result = conn.execute(ins)
-                boundPKId = result.inserted_primary_key
+        sName = line[0]
+        year  = line[1]
+        dId   = line[2]
+        rVote = line[3]
+        dVote = line[4].replace('\n','')
 
-                # get pkId from last inserted for StateBoundary FK
-                districtPKs.append(boundPKId)
-    else:
-        # No district data
-        pass
+        if rVote == "Unopposed":            # Check if a party was unopposed if it is make -1 a FLAG that will mean unoppsed
+            rVote = -1
+            dVote =  0
+        elif dVote == "Unopposed":
+            rVote =  0
+            dVote = -1
 
-    return districtPKs
+
+        # get fk using sName
+        s = "SELECT Id FROM gerrymandering.States WHERE States.StateName = \'" + sName + "\' and States.Year = " + year
+        for row in conn.execute(s):
+            sFK = row[0]
+
+        ins = metadata.tables['Districts'].insert().values(DistrictId = dId, clickCount = 0, StateId=sFK)
+        result = conn.execute(ins)
+        districtPK = result.inserted_primary_key
+
+        # insert Vote data
+        ins = metadata.tables['Votes'].insert().values(DistrictId = districtPK[0], Party = "Republican", voteCount=rVote)
+        conn.execute(ins)
+        ins = metadata.tables['Votes'].insert().values(DistrictId=districtPK[0], Party="Democrat", voteCount=dVote)
+        conn.execute(ins)
+
 
 
 def importPopulationData(year, sName, sFp, district):
