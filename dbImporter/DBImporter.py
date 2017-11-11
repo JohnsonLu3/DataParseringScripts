@@ -28,7 +28,10 @@ def main():
     buildStateFPMap()
     #importStateData()
     #importStateBoundaryData()
-    importDistrictsAndVote('../parsedFiles/votingData.csv')
+    #importDistrictsAndVote('../parsedFiles/votingData.csv')
+    importPopulationData('../parsedFiles/VirginiaCensus.csv')
+    importPopulationData('../parsedFiles/NorthCarolinaCensus.csv')
+    importPopulationData('../parsedFiles/nyCensus.csv')
 
 
 def buildStateFPMap():
@@ -151,29 +154,17 @@ def importDistrictsAndVote(path):
 
 
 
-def importPopulationData(year, sName, sFp, district):
+def importPopulationData(path):
     # Population
     # `Id`
     # `Name` ENUM('Total', 'White', 'Black', 'Hispanic', 'Asian', 'PacificIslander', 'AmericanIndian', 'Other', 'Mixed')
     # `Population`
     # `DistrictId`
-    if year in range(2010, 2020):               # range of the census data we have
-        if sName == 'Virginia':
-            vaCensus = open('../parsedFiles/VirginiaCensus.csv', 'r')
-        elif sName == 'North Carolina':
-            ncCensus = open('../parsedFiles/NorthCarolinaCensus.csv', 'r')
-        elif sName == 'New York':
-            nyCensus = open('../parsedFiles/nyCensus.csv', 'r')
+    censusData = open('../parsedFiles/nyCensus.csv', 'r')
 
-        ins = metadata.tables['Population'].insert().values(Name='', Population=-1, DistrictId=district)
-        result = conn.execute(ins)
+    ins = metadata.tables['Population'].insert().values(Name='', Population=-1, DistrictId=district)
+    conn.execute(ins)
 
-
-
-
-def importVotingData(dId, party, vote):
-    ins = metadata.tables['Votes'].insert().values(DistrictId=dId, Party=party, voteCount=vote)
-    result = conn.execute(ins)
 
 
 def printTables():
